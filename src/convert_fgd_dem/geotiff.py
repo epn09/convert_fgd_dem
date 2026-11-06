@@ -60,7 +60,7 @@ class Geotiff:
             raster_band.WriteArray(self.np_array)
             raster_band.SetNoDataValue(no_data_value)
 
-    def create(self, band_count, dtype, file_name, no_data_value=-9999, rgbify=False):
+    def create(self, band_count, dtype, file_name, no_data_value=-9999, rgbify=False, options=None):
         """Create GeoTiff from elevation and coordinates, pixel size, grid size
 
         Args:
@@ -82,6 +82,7 @@ class Geotiff:
                 self.y_length,
                 band_count,
                 dtype,
+                options=options,
             )
             dst_ds.SetGeoTransform(self.geo_transform)
         except AttributeError:

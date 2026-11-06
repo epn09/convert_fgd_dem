@@ -186,15 +186,18 @@ class Converter:
                 progress_message = "Converting XML files to Terrain RGB..."
             else:
                 progress_message = "Converting XML files to GeoTIFF DEM..."
-            self.feedback.pushInfo(progress_message)
+            if self.feedback:
+                self.feedback.pushInfo(progress_message)
 
-            self.feedback.setProgress(0)
+            if self.feedback:
+                self.feedback.setProgress(0)
             for xml_path in self.dem.xml_paths:
                 self.dem.all_content_list.append(self.dem.get_xml_content(xml_path))
                 download_progress = int(
                     len(self.dem.all_content_list) / len(self.dem.xml_paths) * 90
                 )
-                self.feedback.setProgress(download_progress)
+                if self.feedback:
+                    self.feedback.setProgress(download_progress)
 
             # Stop process if output is a whole no data dem
             is_nodata_dem = True
@@ -204,15 +207,16 @@ class Converter:
                     is_nodata_dem = False
                     break
 
-            if is_nodata_dem:
+            if is_nodata_dem and self.feedback:
                 self.feedback.reportError("Output DEM has no elevation data.")
                 self.feedback.cancel()
 
             # Don't produce geotiff if process aborted by user
-            if self.feedback.isCanceled():
+            if self.feedback and self.feedback.isCanceled():
                 return
 
-            self.feedback.pushInfo("Creating TIFF file...")
+            if self.feedback:
+                self.feedback.pushInfo("Creating TIFF file...")
 
             # convert Dem contents to array
             self.dem.contents_to_array()
@@ -238,7 +242,7 @@ class Converter:
                         resampleAlg="nearest",
                     )
             else:
-                geotiff.create(1, gdal.GDT_Float32, file_name=self.file_name)
+                geotiff.create(1, gdal.GDT_Float32, file_name=self.file_name, options={"COMPRESS": "ZSTD", "TILED": "YES"})
                 if not self.output_epsg == "EPSG:4326":
                     geotiff.resampling(
                         file_name=self.file_name,
@@ -248,7 +252,8 @@ class Converter:
 
         except Exception as e:
             # emit error for plugin
-            self.feedback.reportError(f"An error occurred during conversion: {str(e)}")
+            if self.feedback:
+                self.feedback.reportError(f"An error occurred during conversion: {str(e)}")
             raise Exception(e) from e
 
         # Remove extracted directory from ZIP file
@@ -266,4 +271,5 @@ class Converter:
                 extract_dir = zip_file.parent / zip_file.stem
                 shutil.rmtree(extract_dir)
 
-        self.feedback.setProgress(100)
+        if self.feedback:
+            self.feedback.setProgress(100)
